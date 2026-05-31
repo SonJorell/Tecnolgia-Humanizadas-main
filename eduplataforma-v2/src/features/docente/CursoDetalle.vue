@@ -50,7 +50,7 @@ onMounted(() => {
         <div class="space-y-6">
           <BaseCard class="p-5">
             <h3 class="font-bold flex items-center gap-2 mb-4 text-text dark:text-dark-text"><Target :size="18" class="text-primary"/> Objetivos</h3>
-            <ul v-if="curso.objetivos?.length > 0" class="space-y-2 text-sm text-text-muted">
+            <ul v-if="(curso.objetivos?.length || 0) > 0" class="space-y-2 text-sm text-text-muted">
               <li v-for="(obj, i) in curso.objetivos" :key="i" class="flex items-start gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
                 <span>{{ obj }}</span>

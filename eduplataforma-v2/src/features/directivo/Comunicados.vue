@@ -69,7 +69,7 @@ async function emitirComunicado() {
         curso_id: nuevoComunicado.value.segmento === 'curso_especifico' ? nuevoComunicado.value.curso_id : null
       })
       if (error) throw error
-      appStore.addToast({ tipo: 'exito', mensaje: 'Comunicado enviado correctamente.' })
+      appStore.addToast({ tipo: 'success', mensaje: 'Comunicado enviado correctamente.' })
     }
     
     cancelarEdicion()

@@ -8,6 +8,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
 import { 
   ChevronLeft, Send, CheckCircle2, Clock, DownloadCloud
 } from 'lucide-vue-next'
@@ -17,6 +18,7 @@ const router = useRouter()
 const cursosStore = useCursosStore()
 const tareasStore = useTareasStore()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 
 const cursoId = route.params.id as string
 const activeTab = ref<'tareas' | 'materiales' | 'comunidad'>('tareas')
@@ -64,7 +66,7 @@ function removeEntregaArchivo(index: number) {
 }
 
 async function enviarEntrega() {
-  if (!newUrl.value.trim() && !fileInput.value?.files?.length) {
+  if (!entregaForm.value.archivo_url.trim() && !entregaForm.value.archivos.length) {
     appStore.addToast({ tipo: 'error', mensaje: 'Debes añadir un enlace o un archivo.' })
     return
   }
@@ -74,7 +76,7 @@ async function enviarEntrega() {
       id: crypto.randomUUID(),
       material_id: tareaActiva.value.id,
       alumno_id: authStore.user?.id,
-      archivo_url: newUrl.value,
+      archivo_url: entregaForm.value.archivo_url,
       archivos: entregaForm.value.archivos,
       estado: 'entregado',
       sincronizado: false,
@@ -98,7 +100,6 @@ async function enviarEntrega() {
     tareasStore.entregas.push(payload)
     showEntregaModal.value = false
     appStore.addToast({ tipo: 'success', mensaje: '¡Tarea entregada! Se subirá a la nube.' })
-    uploading.value = false
     entregando.value = false
   } catch (e) {
     entregando.value = false
@@ -386,7 +387,7 @@ function descargarArchivo(archivo: any) {
         </label>
 
         <!-- Lista de Archivos -->
-        <div v-if="entregaForm.archivos.length > 0" class="mt-3 space-y-2 mb-6">
+        <div v-if="entregaForm.archivos.length > 0" class="space-y-2 mt-4">
           <div v-for="(file, idx) in entregaForm.archivos" :key="idx" class="flex items-center justify-between p-2 bg-surface dark:bg-dark-card2 rounded-lg border border-border dark:border-white/10">
             <div class="flex items-center gap-2 overflow-hidden">
               <span class="text-lg">📄</span>

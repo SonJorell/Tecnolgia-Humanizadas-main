@@ -34,7 +34,7 @@ const tarea = computed<any>(() => route.params.id === 'demo' ? {
   descripcion: 'Lee el capítulo 4 del texto guía escolar...',
   vence_en: null,
   xp_premio: 50
-} : appStore.materiales.find(m => m.id === route.params.id) || {})
+} : Object.values(cursosStore.materiales).flat().find((m: any) => m.id === route.params.id) || {})
 
 const entrega = computed(() => {
   return tareasStore.entregas.find(e => e.material_id === id)

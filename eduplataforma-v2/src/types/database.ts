@@ -40,6 +40,7 @@ export interface Material {
   archivo_url?: string
   archivo_nombre?: string
   archivo_size?: number
+  archivos?: any[]
   disponible_offline: boolean
   publicado: boolean
   fecha_entrega?: string
@@ -55,6 +56,7 @@ export interface Entrega {
   archivo_url?: string
   calificacion?: number
   comentario?: string
+  feedback_docente?: string
   estado: 'pendiente' | 'entregado' | 'revisado' | 'tardio'
   sincronizado: boolean
   entregado_en?: string
