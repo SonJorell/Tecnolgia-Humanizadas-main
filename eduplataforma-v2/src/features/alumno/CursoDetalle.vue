@@ -43,7 +43,7 @@ async function handleEntregaFileUpload(event: Event) {
   for (let i = 0; i < target.files.length; i++) {
     const file = target.files[i]
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      cursosStore.appStore?.addToast({ tipo: 'error', mensaje: `El archivo ${file.name} supera el límite de ${MAX_SIZE_MB}MB` })
+      appStore.addToast({ tipo: 'error', mensaje: `El archivo ${file.name} supera el límite de ${MAX_SIZE_MB}MB` })
       continue
     }
 
@@ -64,8 +64,8 @@ function removeEntregaArchivo(index: number) {
 }
 
 async function enviarEntrega() {
-  if (!entregaForm.value.archivo_url && entregaForm.value.archivos.length === 0) {
-    cursosStore.appStore?.addToast({ tipo: 'error', mensaje: 'Debes añadir un enlace o un archivo.' })
+  if (!newUrl.value.trim() && !fileInput.value?.files?.length) {
+    appStore.addToast({ tipo: 'error', mensaje: 'Debes añadir un enlace o un archivo.' })
     return
   }
   entregando.value = true
@@ -74,7 +74,7 @@ async function enviarEntrega() {
       id: crypto.randomUUID(),
       material_id: tareaActiva.value.id,
       alumno_id: authStore.user?.id,
-      archivo_url: entregaForm.value.archivo_url,
+      archivo_url: newUrl.value,
       archivos: entregaForm.value.archivos,
       estado: 'entregado',
       sincronizado: false,
@@ -95,10 +95,12 @@ async function enviarEntrega() {
     }))
     
     // Update local store immediately for optimistic UI
-    tareasStore.entregas.push(payload as any)
+    tareasStore.entregas.push(payload)
     showEntregaModal.value = false
-    cursosStore.appStore?.addToast({ tipo: 'success', mensaje: '¡Tarea entregada! Se subirá a la nube.' })
-  } finally {
+    appStore.addToast({ tipo: 'success', mensaje: '¡Tarea entregada! Se subirá a la nube.' })
+    uploading.value = false
+    entregando.value = false
+  } catch (e) {
     entregando.value = false
   }
 }
@@ -116,7 +118,7 @@ const materiales = computed(() => cursosStore.materiales[cursoId] || [])
 
 // Todas las tareas de este curso (materiales con tipo = 'tarea' o xp_premio > 0)
 const tareasDelCurso = computed(() => {
-  return materiales.value.filter(m => m.tipo === 'tarea' || m.xp_premio > 0).map(mat => {
+  return materiales.value.filter(m => m.tipo === 'tarea' || (m as any).xp_premio > 0).map(mat => {
     // Buscar si el alumno ya entregó
     const entrega = tareasStore.entregas.find(e => e.material_id === mat.id)
     return {
@@ -189,7 +191,7 @@ function descargarArchivo(archivo: any) {
     document.body.removeChild(a)
   } catch (error) {
     console.error('Error al descargar:', error)
-    cursosStore.appStore?.addToast({ tipo: 'error', mensaje: 'No se pudo descargar el archivo' })
+    appStore.addToast({ tipo: 'error', mensaje: 'No se pudo descargar el archivo' })
   }
 }
 </script>
@@ -259,7 +261,7 @@ function descargarArchivo(archivo: any) {
               </div>
             </div>
           </div>
-          <BaseButton size="sm" :variant="tarea.estado_entrega === 'pendiente' ? 'primary' : tarea.estado_entrega === 'revisado' ? 'outline' : 'secondary'" @click="abrirEntrega(tarea)">
+          <BaseButton size="sm" :variant="tarea.estado_entrega === 'pendiente' ? 'primary' : tarea.estado_entrega === 'revisado' ? 'ghost' : 'secondary'" @click="abrirEntrega(tarea)">
             {{ tarea.estado_entrega === 'pendiente' ? 'Entregar' : tarea.estado_entrega === 'revisado' ? 'Ver Corrección' : 'Actualizar' }}
           </BaseButton>
         </div>

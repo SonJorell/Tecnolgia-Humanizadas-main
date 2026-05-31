@@ -59,7 +59,7 @@ async function emitirComunicado() {
         curso_id: nuevoComunicado.value.segmento === 'curso_especifico' ? nuevoComunicado.value.curso_id : null
       }).eq('id', editandoId.value)
       if (error) throw error
-      appStore.addToast({ tipo: 'exito', mensaje: 'Comunicado actualizado correctamente.' })
+      appStore.addToast({ tipo: 'success', mensaje: 'Comunicado publicado exitosamente' })
     } else {
       const { error } = await supabase.from('comunicados').insert({
         autor_id: authStore.perfil?.id,
@@ -101,7 +101,7 @@ async function eliminarComunicado(id: string) {
   try {
     const { error } = await supabase.from('comunicados').delete().eq('id', id)
     if (error) throw error
-    appStore.addToast({ tipo: 'exito', mensaje: 'Comunicado eliminado.' })
+    appStore.addToast({ tipo: 'success', mensaje: 'Comunicado eliminado' })
     await cargarComunicados()
   } catch (e) {
     appStore.addToast({ tipo: 'error', mensaje: 'Error al eliminar.' })

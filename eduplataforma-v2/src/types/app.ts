@@ -2,7 +2,7 @@ export type EstadoConexion = 'ONLINE_SUPABASE' | 'ONLINE_LAN_ONLY' | 'OFFLINE_TO
 
 export interface Toast {
   id: string
-  tipo: 'info' | 'xp' | 'sync' | 'error'
+  tipo: 'info' | 'xp' | 'sync' | 'error' | 'success'
   mensaje: string
   duracion?: number
 }
@@ -25,8 +25,8 @@ export interface NavItem {
 
 export interface SyncQueueItem {
   id: string
-  tipo: 'entrega' | 'progreso' | 'feedback' | 'monedas' | 'canje' | 'logro'
-  accion: 'insert' | 'update' | 'upsert'
+  tipo: 'entrega' | 'progreso' | 'feedback' | 'monedas' | 'canje' | 'logro' | 'recompensa_alumno' | 'correccion'
+  accion: 'insert' | 'update' | 'upsert' | 'rpc' | 'delete'
   tabla: string
   payload: Record<string, unknown>
   intentos: number

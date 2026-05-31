@@ -15,6 +15,9 @@ export interface Curso {
   anio_escolar?: string
   seccion?: string
   periodo_id?: string
+  estado?: string
+  banner_url?: string
+  objetivos?: string[]
   creado_en?: string
 }
 

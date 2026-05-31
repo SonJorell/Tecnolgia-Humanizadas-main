@@ -200,28 +200,28 @@ async function getDB(): Promise<IDBPDatabase<EduDB>> {
 export const idb = {
   get: async <T extends StoreName>(store: T, key: string): Promise<EduDB[T]['value'] | undefined> => {
     const db = await getDB()
-    return db.get(store, key)
+    return db.get(store as any, key)
   },
 
   put: async <T extends StoreName>(store: T, val: EduDB[T]['value']) => {
     const db = await getDB()
     const safeVal = JSON.parse(JSON.stringify(val))
-    return db.put(store, safeVal)
+    return db.put(store as any, safeVal)
   },
 
   getAll: async <T extends StoreName>(store: T): Promise<EduDB[T]['value'][]> => {
     const db = await getDB()
-    return db.getAll(store)
+    return db.getAll(store as any)
   },
 
   delete: async <T extends StoreName>(store: T, key: string) => {
     const db = await getDB()
-    return db.delete(store, key)
+    return db.delete(store as any, key)
   },
 
   clear: async <T extends StoreName>(store: T) => {
     const db = await getDB()
-    return db.clear(store)
+    return db.clear(store as any)
   },
 
   update: async <T extends StoreName>(
@@ -230,7 +230,7 @@ export const idb = {
     fn: (val: EduDB[T]['value']) => EduDB[T]['value']
   ) => {
     const db = await getDB()
-    const tx = db.transaction(store, 'readwrite')
+    const tx = db.transaction(store as any, 'readwrite')
     const val = await tx.store.get(key)
     if (val) {
       await tx.store.put(fn(val as EduDB[T]['value']))
@@ -240,12 +240,12 @@ export const idb = {
 
   count: async <T extends StoreName>(store: T) => {
     const db = await getDB()
-    return db.count(store)
+    return db.count(store as any)
   },
 
   putMany: async <T extends StoreName>(store: T, items: EduDB[T]['value'][]) => {
     const db = await getDB()
-    const tx = db.transaction(store, 'readwrite')
+    const tx = db.transaction(store as any, 'readwrite')
     for (const item of items) {
       const safeItem = JSON.parse(JSON.stringify(item))
       await tx.store.put(safeItem)

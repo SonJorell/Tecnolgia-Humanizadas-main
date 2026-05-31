@@ -1,7 +1,7 @@
 export interface Perfil {
   id: string
   nombre: string
-  rol: 'alumno' | 'docente' | 'directivo'
+  rol: 'alumno' | 'docente' | 'directivo' | 'ti'
   curso_id?: string
   avatar_url?: string
   xp: number
@@ -13,6 +13,9 @@ export interface Perfil {
   creado_en?: string
   actualizado?: string
   marco_activo_id?: string
+  banner_activo_id?: string
+  avatar_activo_id?: string
+  inventario_premios?: string[]
 }
 
 export interface UserSession {

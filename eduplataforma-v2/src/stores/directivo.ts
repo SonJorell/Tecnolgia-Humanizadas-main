@@ -175,7 +175,7 @@ export const useDirectivoStore = defineStore('directivo', () => {
   async function crearUsuarioPrueba(email: string, nombre: string, rol: string) {
     loading.value = true
     try {
-      const { data, error } = await supabase.rpc('crear_usuario_admin', {
+      const { error } = await supabase.rpc('crear_usuario_admin', {
         p_email: email,
         p_password: 'prueba123',
         p_nombre: nombre,
