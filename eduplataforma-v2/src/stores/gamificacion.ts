@@ -36,13 +36,17 @@ export const useGamificacionStore = defineStore('gamificacion', () => {
   ])
 
   const tienda = ref<any[]>([])
+  const loading = ref(false)
 
   async function loadTienda() {
     try {
+      loading.value = true
       const { data } = await supabase.from('premios').select('*').eq('activo', true)
       if (data) tienda.value = data
     } catch (err) {
       console.error('Error loading tienda', err)
+    } finally {
+      loading.value = false
     }
   }
 
@@ -181,6 +185,7 @@ export const useGamificacionStore = defineStore('gamificacion', () => {
   return {
     logros,
     tienda,
+    loading,
     inventarioPremios,
     progresoNivel,
     ganarXP,

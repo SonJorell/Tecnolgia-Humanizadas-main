@@ -3,203 +3,118 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
-import { useSyncStore } from '@/stores/sync'
-import { useSync } from '@/composables/useSync'
 import { supabase } from '@/services/supabase'
-import Logo from '@/components/ui/Logo.vue'
-import { Moon, Sun, RefreshCw, LogOut, Bell, X, Check } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
-const syncStore = useSyncStore()
-const { syncAhora } = useSync()
-
-const rolLabel = computed(() => {
-  switch (authStore.perfil?.rol) {
-    case 'alumno': return 'Alumno'
-    case 'docente': return 'Docente'
-    case 'directivo': return 'Directivo'
-    default: return ''
-  }
-})
-
-const rolBadgeClass = computed(() => {
-  switch (authStore.perfil?.rol) {
-    case 'alumno': return 'bg-primary-bg text-primary'
-    case 'docente': return 'bg-mint-bg text-mint'
-    case 'directivo': return 'bg-violet-bg text-violet'
-    default: return 'bg-surface text-text-muted'
-  }
-})
-
-const connDot = computed(() => {
-  switch (appStore.conexion) {
-    case 'ONLINE_SUPABASE': return 'bg-[#2db88a]'
-    case 'ONLINE_LAN_ONLY': return 'bg-[#e8a020]'
-    default: return 'bg-[#e05050]'
-  }
-})
 
 async function handleLogout() {
-  await authStore.signOut()
-  router.push('/login')
+ await authStore.signOut()
+ router.push('/login')
 }
 
-// ─── NOTIFICACIONES ───
 const showNotifs = ref(false)
 const notificaciones = ref<any[]>([])
 const unreadNotifs = computed(() => notificaciones.value.filter(n => !n.leido).length)
 
 onMounted(async () => {
-  if (authStore.user) {
-    const { data } = await supabase
-      .from('notificaciones')
-      .select('*')
-      .eq('usuario_id', authStore.user.id)
-      .order('creado_en', { ascending: false })
-      .limit(10)
-    
-    if (data) {
-      notificaciones.value = data
-    }
-  }
+ if (authStore.user) {
+ const { data } = await supabase
+ .from('notificaciones')
+ .select('*')
+ .eq('usuario_id', authStore.user.id)
+ .order('creado_en', { ascending: false })
+ .limit(10)
+ 
+ if (data) {
+ notificaciones.value = data
+ }
+ }
 })
 
-async function markAsRead(id: string) {
-  await supabase.from('notificaciones').update({ leido: true }).eq('id', id)
-  const n = notificaciones.value.find(x => x.id === id)
-  if (n) n.leido = true
-}
-
 async function markAllAsRead() {
-  const unreadIds = notificaciones.value.filter(n => !n.leido).map(n => n.id)
-  if (unreadIds.length > 0) {
-    await supabase.from('notificaciones').update({ leido: true }).in('id', unreadIds)
-    notificaciones.value.forEach(n => n.leido = true)
-  }
-}
-
-async function deleteNotif(id: string) {
-  await supabase.from('notificaciones').delete().eq('id', id)
-  notificaciones.value = notificaciones.value.filter(x => x.id !== id)
+ const unreadIds = notificaciones.value.filter(n => !n.leido).map(n => n.id)
+ if (unreadIds.length > 0) {
+ await supabase.from('notificaciones').update({ leido: true }).in('id', unreadIds)
+ notificaciones.value.forEach(n => n.leido = true)
+ }
 }
 </script>
 
 <template>
-  <header
-    class="sticky top-9 z-40 h-[60px] md:h-[60px] bg-card/95 dark:bg-dark-card/95 backdrop-blur-lg shadow-topbar flex items-center px-3 md:px-5"
-  >
-    <!-- Left: Logo + App name + Role badge -->
-    <div class="flex items-center gap-2.5 min-w-0">
-      <Logo :size="28" />
-      <span class="font-display font-bold text-base text-text dark:text-dark-text hidden sm:inline">
-        EduPlataforma
-      </span>
-      <span
-        v-if="authStore.perfil"
-        :class="['text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full', rolBadgeClass]"
-      >
-        {{ rolLabel }}
-      </span>
-    </div>
+ <header class="flex justify-between items-center w-full px-6 md:px-12 py-4 sticky top-8 z-30 bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/50 transition-colors duration-300">
+ <div class="flex items-center gap-6 flex-1">
+ 
+ <!-- Search -->
+ <div class="relative hidden sm:block w-full max-w-sm">
+ <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-[20px]">search</span>
+ <input id="input_text_1" name="input_text_1" 
+ type="text" 
+ class="pl-11 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/50 rounded-2xl font-['Inter'] text-[14px] leading-[20px] w-full text-on-surface focus:ring-2 focus:ring-primary/20 :ring-[#96ccff]/20 focus:border-primary/40 :border-[#96ccff]/40 outline-none transition-all placeholder:text-on-surface-variant/40 :text-[#9ea8b3]/50" 
+ placeholder="¿Qué quieres aprender hoy?" 
+ />
+ </div>
+ </div>
+ 
+ <div class="flex items-center gap-2 md:gap-4">
+ <button type="button" 
+ class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container-low :bg-[#1a2129] transition-colors text-on-surface-variant"
+ @click="appStore.toggleDarkMode()"
+ :title="appStore.darkMode ? 'Modo claro' : 'Modo oscuro'"
+ >
+ <span class="material-symbols-outlined">{{ appStore.darkMode ? 'light_mode' : 'dark_mode' }}</span>
+ </button>
+ 
+ <div class="relative">
+ <button type="button" 
+ class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container-low :bg-[#1a2129] transition-colors text-on-surface-variant"
+ @click="showNotifs = !showNotifs"
+ >
+ <span class="material-symbols-outlined">notifications</span>
+ </button>
+ <span v-if="unreadNotifs > 0" class="absolute top-2.5 right-2.5 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
 
-    <div class="flex-1" />
-
-    <!-- Right: controls -->
-    <div class="flex items-center gap-2">
-      <!-- Connection dot (mobile) -->
-      <div :class="['w-2 h-2 rounded-full md:hidden', connDot]" />
-
-      <!-- Sync button (desktop) -->
-      <button
-        v-if="syncStore.hasPendientes"
-        class="hidden md:flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-light px-2 py-1.5 rounded-lg hover:bg-primary-bg transition-colors"
-        :disabled="syncStore.syncing"
-        @click="syncAhora"
-      >
-        <RefreshCw :size="14" :class="{ 'animate-spin': syncStore.syncing }" />
-        Sync ↑{{ syncStore.pendientes }}
-      </button>
-
-      <!-- Dark mode toggle -->
-      <button
-        class="p-2 rounded-lg text-text-light hover:text-text hover:bg-surface dark:hover:bg-dark-card2 transition-colors"
-        @click="appStore.toggleDarkMode()"
-        :title="appStore.darkMode ? 'Modo claro' : 'Modo oscuro'"
-      >
-        <Sun v-if="appStore.darkMode" :size="18" />
-        <Moon v-else :size="18" />
-      </button>
-
-      <!-- Notificaciones -->
-      <div class="relative">
-        <button
-          class="p-2 rounded-lg text-text-light hover:text-text hover:bg-surface dark:hover:bg-dark-card2 transition-colors relative"
-          @click="showNotifs = !showNotifs"
-        >
-          <Bell :size="18" />
-          <span v-if="unreadNotifs > 0" class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full ring-2 ring-card dark:ring-dark-card"></span>
-        </button>
-
-        <!-- Dropdown Notificaciones -->
-        <div v-if="showNotifs" class="absolute right-0 mt-2 w-80 bg-card dark:bg-dark-card rounded-2xl shadow-xl border border-border dark:border-white/10 overflow-hidden z-50">
-          <div class="p-3 border-b border-border dark:border-white/10 flex items-center justify-between bg-surface dark:bg-dark-card2">
-            <h3 class="font-bold text-sm text-text dark:text-dark-text">Notificaciones</h3>
-            <button v-if="unreadNotifs > 0" @click="markAllAsRead" class="text-[10px] font-bold text-primary hover:underline">
-              Marcar todo como leído
-            </button>
-          </div>
-          <div class="max-h-80 overflow-y-auto">
-            <div v-if="notificaciones.length === 0" class="p-6 text-center text-xs text-text-muted">
-              No tienes notificaciones
-            </div>
-            <div 
-              v-for="notif in notificaciones" 
-              :key="notif.id"
-              class="p-3 border-b border-border dark:border-white/5 hover:bg-surface dark:hover:bg-dark-card2 transition-colors flex gap-3 group"
-              :class="{'bg-primary/5 dark:bg-primary/10': !notif.leido}"
-            >
-              <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
-                <Bell :size="14" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-text dark:text-dark-text">{{ notif.titulo }}</p>
-                <p class="text-xs text-text-muted mt-0.5 line-clamp-2">{{ notif.mensaje }}</p>
-                <p class="text-[10px] text-text-muted/50 mt-1">{{ new Date(notif.creado_en).toLocaleDateString() }}</p>
-              </div>
-              <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button v-if="!notif.leido" @click="markAsRead(notif.id)" class="p-1 text-primary hover:bg-primary/10 rounded" title="Marcar como leído">
-                  <Check :size="12" />
-                </button>
-                <button @click="deleteNotif(notif.id)" class="p-1 text-danger hover:bg-danger/10 rounded" title="Borrar">
-                  <X :size="12" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Avatar -->
-      <div
-        v-if="authStore.perfil"
-        class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all overflow-hidden"
-        @click="router.push(`/${authStore.perfil.rol}/perfil`)"
-      >
-        <img v-if="authStore.perfil.avatar_url && (authStore.perfil.avatar_url.startsWith('http') || authStore.perfil.avatar_url.startsWith('data'))" :src="authStore.perfil.avatar_url" class="w-full h-full object-cover" />
-        <span v-else-if="authStore.perfil.avatar_url" class="text-lg">{{ authStore.perfil.avatar_url }}</span>
-        <span v-else>{{ authStore.perfil.nombre?.charAt(0).toUpperCase() || 'U' }}</span>
-      </div>
-
-      <!-- Logout (desktop) -->
-      <button
-        class="hidden md:flex items-center gap-1 text-xs text-text-muted hover:text-danger px-2 py-1.5 rounded-lg hover:bg-danger-bg transition-colors"
-        @click="handleLogout"
-      >
-        <LogOut :size="14" />
-        Salir
-      </button>
-    </div>
-  </header>
+ <!-- Dropdown Notificaciones -->
+ <div v-if="showNotifs" class="absolute right-0 mt-2 w-80 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/50 overflow-hidden z-50">
+ <div class="p-3 border-b border-outline-variant/50 flex items-center justify-between bg-surface-container-low">
+ <h3 class="font-bold text-sm text-on-surface">Notificaciones</h3>
+ <button type="button" v-if="unreadNotifs > 0" @click="markAllAsRead" class="text-[10px] font-bold text-primary hover:underline">
+ Marcar todo como leído
+ </button>
+ </div>
+ <div class="max-h-80 overflow-y-auto">
+ <div v-if="notificaciones.length === 0" class="p-6 text-center text-xs text-on-surface-variant/60">
+ No tienes notificaciones
+ </div>
+ <div 
+ v-for="notif in notificaciones" 
+ :key="notif.id"
+ class="p-3 border-b border-outline-variant/30 hover:bg-surface-container :bg-[#222b35] transition-colors flex gap-3"
+ :class="{'bg-primary/5 ': !notif.leido}"
+ >
+ <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+ <span class="material-symbols-outlined text-[16px]">notifications</span>
+ </div>
+ <div class="flex-1 min-w-0">
+ <p class="text-xs font-bold text-on-surface">{{ notif.titulo }}</p>
+ <p class="text-xs text-on-surface-variant/80 mt-0.5 line-clamp-2">{{ notif.mensaje }}</p>
+ <p class="text-[10px] text-on-surface-variant/50 mt-1">{{ new Date(notif.creado_en).toLocaleDateString() }}</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ 
+ <div class="h-6 w-[1px] bg-outline-variant/40 mx-2"></div>
+ 
+ <button type="button" 
+ class="flex items-center gap-2 py-2 px-4 rounded-xl border border-primary/20 hover:bg-primary/5 :bg-[#96ccff]/10 transition-all"
+ @click="handleLogout"
+ >
+ <span class="font-['Inter'] text-[14px] font-bold text-primary hidden sm:inline">Salir</span>
+ <span class="material-symbols-outlined text-primary text-[20px]">login</span>
+ </button>
+ </div>
+ </header>
 </template>

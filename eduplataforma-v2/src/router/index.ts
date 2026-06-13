@@ -60,7 +60,6 @@ const router = createRouter({
       children: [
         { path: '', name: 'directivo-resumen', component: () => import('@/features/directivo/Resumen.vue') },
         { path: 'rendimiento', name: 'directivo-rendimiento', component: () => import('@/features/directivo/Rendimiento.vue') },
-        { path: 'infraestructura', name: 'directivo-infra', component: () => import('@/features/directivo/Infraestructura.vue') },
         { path: 'alertas', name: 'directivo-alertas', component: () => import('@/features/directivo/Alertas.vue') },
         { path: 'gestion', name: 'directivo-gestion', component: () => import('@/features/directivo/GestionAcademica.vue') },
         { path: 'comunicados', name: 'directivo-comunicados', component: () => import('@/features/directivo/Comunicados.vue') },
@@ -75,6 +74,7 @@ const router = createRouter({
       meta: { roles: ['ti'] },
       children: [
         { path: '', name: 'ti-panel', component: () => import('@/features/ti/PanelTI.vue') },
+        { path: 'infraestructura', name: 'ti-infra', component: () => import('@/features/ti/Infraestructura.vue') },
         { path: 'usuarios', name: 'ti-usuarios', component: () => import('@/features/ti/GestionUsuarios.vue') },
         { path: 'perfil', name: 'ti-perfil', component: () => import('@/features/shared/PerfilUniversal.vue') },
       ]

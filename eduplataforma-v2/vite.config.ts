@@ -1,11 +1,16 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import { ViteWebfontDownload } from 'vite-plugin-webfont-dl'
 import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [
     vue(),
+    ViteWebfontDownload([
+      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Hanken+Grotesk:wght@600;700;800&family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap',
+      'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap'
+    ]),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {

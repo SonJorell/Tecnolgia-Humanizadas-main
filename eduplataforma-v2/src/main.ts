@@ -6,17 +6,29 @@ import { useAuthStore } from './stores/auth'
 import { useAppStore } from './stores/app'
 import './index.css'
 
-const app = createApp(App)
-const pinia = createPinia()
+import BaseButton from './components/ui/BaseButton.vue'
+import BaseCard from './components/ui/BaseCard.vue'
+import BaseBadge from './components/ui/BaseBadge.vue'
 
-app.use(pinia)
-app.use(router)
+async function bootstrap() {
+  const app = createApp(App)
+  const pinia = createPinia()
 
-// Inicializar sesión y tema
-const authStore = useAuthStore()
-authStore.initSession()
+  app.use(pinia)
+  
+  app.component('BaseButton', BaseButton)
+  app.component('BaseCard', BaseCard)
+  app.component('BaseBadge', BaseBadge)
 
-const appStore = useAppStore()
-appStore.initDarkMode()
+  // Inicializar sesión y tema
+  const authStore = useAuthStore()
+  await authStore.initialize()
 
-app.mount('#app')
+  const appStore = useAppStore()
+  appStore.initDarkMode()
+
+  app.use(router)
+  app.mount('#app')
+}
+
+bootstrap()

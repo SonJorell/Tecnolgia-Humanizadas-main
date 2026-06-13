@@ -1,0 +1,9 @@
+> 0.5%
+last 2 versions
+not dead
+not ie 11
+not IE_Mob 11
+chrome >= 100
+firefox >= 100
+safari >= 15
+edge >= 100

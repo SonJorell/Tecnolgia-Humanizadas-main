@@ -6,36 +6,34 @@ import { useSyncStore } from '@/stores/sync'
 const appStore = useAppStore()
 const syncStore = useSyncStore()
 
-const bgClass = computed(() => {
-  if (syncStore.syncing) return 'bg-primary'
-  switch (appStore.conexion) {
-    case 'ONLINE_SUPABASE': return 'bg-[#2db88a]'
-    case 'ONLINE_LAN_ONLY': return 'bg-[#e8a020]'
-    default: return 'bg-[#e05050]'
-  }
-})
-
-const statusText = computed(() => {
-  if (syncStore.syncing) return '↑ Sincronizando...'
-  switch (appStore.conexion) {
-    case 'ONLINE_SUPABASE': return '● Conectado · LAN ✓ · Supabase ✓'
-    case 'ONLINE_LAN_ONLY': return '◐ Solo LAN · Guardando offline'
-    default: return '○ Sin conexión · Modo offline activo'
-  }
-})
+const isSupabase = computed(() => appStore.conexion === 'ONLINE_SUPABASE')
+const isLan = computed(() => appStore.conexion === 'ONLINE_LAN_ONLY')
 </script>
 
 <template>
-  <div
-    :class="['conn-banner fixed top-0 left-0 right-0 h-9 flex items-center justify-center z-50 text-white text-xs font-medium font-body', bgClass]"
-  >
-    <span v-if="syncStore.syncing" class="flex items-center gap-2">
-      <span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      {{ statusText }}
-    </span>
-    <span v-else>{{ statusText }}</span>
-    <span v-if="syncStore.hasPendientes && !syncStore.syncing" class="ml-3 opacity-80">
-      · {{ syncStore.pendientes }} pendiente{{ syncStore.pendientes > 1 ? 's' : '' }}
-    </span>
-  </div>
+ <div class="fixed top-0 left-0 right-0 h-8 bg-secondary px-4 flex justify-center items-center gap-4 text-white font-['Inter'] text-[11px] font-medium uppercase tracking-wider z-50">
+ <div class="flex items-center gap-1.5">
+ <span class="w-1.5 h-1.5 rounded-full" :class="syncStore.syncing ? 'bg-tertiary-400 animate-pulse' : 'bg-[#7afac7] animate-pulse'"></span>
+ {{ syncStore.syncing ? 'Sincronizando...' : 'Conectado' }}
+ </div>
+ 
+ <span class="opacity-30">|</span>
+ 
+ <div class="flex items-center gap-1" :class="{'opacity-50': !isLan && !isSupabase}">
+ LAN 
+ <span class="material-symbols-outlined text-[14px]">{{ isLan || isSupabase ? 'check_circle' : 'cancel' }}</span>
+ </div>
+ 
+ <span class="opacity-30">|</span>
+ 
+ <div class="flex items-center gap-1" :class="{'opacity-50': !isSupabase}">
+ Supabase 
+ <span class="material-symbols-outlined text-[14px]">{{ isSupabase ? 'check_circle' : 'cancel' }}</span>
+ </div>
+
+ <div v-if="syncStore.hasPendientes && !syncStore.syncing" class="ml-4 flex items-center gap-1 text-tertiary-800">
+ <span class="material-symbols-outlined text-[14px]">sync_problem</span>
+ {{ syncStore.pendientes }} pendiente(s)
+ </div>
+ </div>
 </template>

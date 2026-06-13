@@ -76,11 +76,11 @@ onUnmounted(() => {
   <div v-if="active" class="fixed inset-0 z-[100] pointer-events-none">
     <canvas ref="canvasRef" class="w-full h-full" />
     <div class="absolute inset-0 flex items-center justify-center animate-fade-in-up">
-      <div class="bg-card dark:bg-dark-card shadow-modal px-8 py-6 rounded-2xl text-center scale-up-center">
+      <div class="bg-surface-container-lowest dark:bg-surface-container-low shadow-modal px-8 py-6 rounded-2xl text-center scale-up-center">
         <p class="text-6xl mb-3">🌟</p>
-        <h2 class="font-display font-extrabold text-2xl text-text dark:text-dark-text">¡Buen trabajo!</h2>
-        <p class="text-mint font-bold mt-2 text-lg">+50 XP</p>
-        <p class="text-amber font-bold">+20 🪙</p>
+        <h2 class="font-headline-lg font-extrabold text-2xl text-on-surface dark:text-on-surface">¡Buen trabajo!</h2>
+        <p class="text-on-secondary-container font-bold mt-2 text-lg">+50 XP</p>
+        <p class="text-amber-800 dark:text-amber-300 font-bold">+20 🪙</p>
       </div>
     </div>
   </div>

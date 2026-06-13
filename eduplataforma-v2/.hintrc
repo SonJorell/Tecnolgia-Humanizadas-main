@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "development"
+  ],
+  "ignoredUrls": [
+    ".*supabase.co.*",
+    ".*fonts.googleapis.com.*",
+    ".*fonts.gstatic.com.*",
+    ".*localhost.*"
+  ],
+  "hints": {
+    "compat-api/css": "off",
+    "content-type": "off",
+    "http-cache": "off",
+    "meta-theme-color": "off",
+    "no-disallowed-headers": "off",
+    "x-content-type-options": "off",
+    "content-type": "off"
+  }
+}

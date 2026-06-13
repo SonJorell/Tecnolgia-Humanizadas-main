@@ -12,6 +12,7 @@ import { useAppStore } from '@/stores/app'
 import { 
   ChevronLeft, Send, CheckCircle2, Clock, DownloadCloud
 } from 'lucide-vue-next'
+import { sanitizeText, containsProfanity } from '@/utils/profanityFilter'
 
 const route = useRoute()
 const router = useRouter()
@@ -152,34 +153,80 @@ async function loadMensajes() {
 
 async function enviarMensaje() {
   if (!nuevoMensaje.value.trim() || !authStore.perfil) return
-  const msg = nuevoMensaje.value.trim()
+  let msg = nuevoMensaje.value.trim()
+  
+  if (containsProfanity(msg)) {
+    appStore.addToast({ tipo: 'error', mensaje: 'Por favor, mantén un lenguaje respetuoso. Tu mensaje ha sido filtrado.' })
+    msg = sanitizeText(msg)
+  }
+  
   nuevoMensaje.value = ''
   
-  mensajes.value.push({
-    id: Math.random().toString(),
-    contenido: msg,
-    creado_en: new Date().toISOString(),
-    autor: {
-      nombre: authStore.perfil.nombre,
-      avatar_url: authStore.perfil.avatar_url,
-      rol: authStore.perfil.rol
-    }
-  })
-
-  await supabase.from('mensajes').insert({
+  // En lugar de inserción optimista falsa, esperamos el retorno real para evitar conflictos de ID
+  const { data: insertedMsg, error } = await supabase.from('mensajes').insert({
     curso_id: cursoId,
     autor_id: authStore.perfil.id,
     contenido: msg
-  })
-  
-  loadMensajes()
+  }).select('id, contenido, creado_en, autor:perfiles(nombre, avatar_url, rol)').single()
+
+  if (!error && insertedMsg) {
+    if (!mensajes.value.some((m: any) => m.id === insertedMsg.id)) {
+      mensajes.value.push(insertedMsg)
+      setTimeout(() => {
+        const container = document.querySelector('.flex-1.overflow-y-auto')
+        if (container) container.scrollTop = container.scrollHeight
+      }, 50)
+    }
+  }
 }
 
-import { watch } from 'vue'
+import { watch, onUnmounted } from 'vue'
+
+let chatSubscription: any = null
+
+function subscribeToChat() {
+  if (chatSubscription) return
+  chatSubscription = supabase
+    .channel(`curso_${cursoId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `curso_id=eq.${cursoId}` }, async payload => {
+      // Buscamos el mensaje con sus relaciones (autor)
+      const { data } = await supabase
+        .from('mensajes')
+        .select('id, contenido, creado_en, autor:perfiles(nombre, avatar_url, rol)')
+        .eq('id', payload.new.id)
+        .single()
+      
+      // Verificamos por ID para evitar duplicados, permitiendo pruebas en varias pestañas con el mismo usuario
+      if (data && !mensajes.value.some((m: any) => m.id === data.id)) {
+        mensajes.value.push(data)
+        // Hacer scroll al final
+        setTimeout(() => {
+          const container = document.querySelector('.flex-1.overflow-y-auto')
+          if (container) container.scrollTop = container.scrollHeight
+        }, 50)
+      }
+    })
+    .subscribe()
+}
+
+function unsubscribeFromChat() {
+  if (chatSubscription) {
+    supabase.removeChannel(chatSubscription)
+    chatSubscription = null
+  }
+}
+
 watch(activeTab, (val) => {
   if (val === 'comunidad') {
     loadMensajes()
+    subscribeToChat()
+  } else {
+    unsubscribeFromChat()
   }
+})
+
+onUnmounted(() => {
+  unsubscribeFromChat()
 })
 
 function descargarArchivo(archivo: any) {
@@ -198,126 +245,165 @@ function descargarArchivo(archivo: any) {
 </script>
 
 <template>
-  <div v-if="curso" class="p-4 md:p-6 animate-fade-in max-w-4xl mx-auto">
-    <!-- Breadcrumb & Cabecera -->
-    <button 
-      class="flex items-center gap-1 text-sm text-text-muted hover:text-text mb-4 transition-colors"
-      @click="router.back()"
-    >
-      <ChevronLeft :size="16" /> Volver a cursos
-    </button>
+  <div v-if="curso" class="pt-8 pb-12 px-gutter max-w-container-max mx-auto animate-fade-in">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-2 mb-6">
+      <button type="button" 
+        class="flex items-center gap-1 text-primary hover:underline transition-all outline-none"
+        @click="router.back()"
+      >
+        <span class="material-symbols-outlined text-sm">chevron_left</span>
+        <span class="text-body-sm font-medium">Volver a cursos</span>
+      </button>
+    </nav>
     
-    <div 
-      class="rounded-2xl p-6 md:p-8 text-white relative overflow-hidden shadow-card mb-6"
-      :style="{ backgroundColor: curso.color || '#1a6fa8' }"
-    >
-      <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <BaseBadge variant="neutral" class="mb-3 bg-white/20 text-white dark:bg-white/20 dark:text-white border-0">{{ curso.nivel }}</BaseBadge>
-          <h1 class="font-display font-extrabold text-3xl md:text-4xl">
-            {{ curso.icono }} {{ curso.nombre }}
-          </h1>
-          <p v-if="curso.docente_id" class="text-white/80 text-sm mt-2 font-medium">
-            👨‍🏫 Prof. {{ (curso as any).docente?.nombre || curso.docente_id }}
-          </p>
+    <!-- Course Bento Header -->
+    <div class="relative w-full rounded-3xl overflow-hidden mb-8 shadow-lg group">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+      <img :src="(curso as any).imagen_url || 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=2070&auto=format&fit=crop'" alt="Course Banner" class="w-full h-48 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105">
+      <div class="absolute inset-0 z-20 flex flex-col justify-end p-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full text-white text-label-sm w-fit mb-4">
+          <span class="material-symbols-outlined text-sm">schedule</span>
+          {{ curso.nivel }}
+        </div>
+        <h2 class="text-headline-lg font-headline-lg text-white mb-2 leading-tight drop-shadow-md">{{ curso.nombre }}</h2>
+        <div class="flex items-center gap-3 text-white/90 drop-shadow-sm">
+          <span class="material-symbols-outlined">person</span>
+          <span class="text-body-md">Prof. {{ (curso as any).docente?.nombre || curso.docente_id }}</span>
         </div>
       </div>
-      <!-- Decorative circle -->
-      <div class="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
     </div>
 
     <!-- Tabs Navigation -->
-    <div class="flex items-center gap-2 border-b border-border dark:border-white/10 mb-6 overflow-x-auto">
-      <button 
-        v-for="tab in [{ id: 'tareas', label: '📝 Tareas' }, { id: 'materiales', label: '📚 Materiales' }, { id: 'comunidad', label: '💬 Comunidad' }]"
-        :key="tab.id"
-        :class="[
-          'px-4 py-3 text-sm font-semibold border-b-2 transition-colors',
-          activeTab === tab.id 
-            ? 'border-primary text-primary dark:text-primary-light' 
-            : 'border-transparent text-text-muted hover:text-text dark:text-dark-muted dark:hover:text-dark-text'
-        ]"
-        @click="activeTab = tab.id as any"
+    <div class="flex border-b border-border-subtle mb-8 overflow-x-auto">
+      <button type="button" 
+        class="flex items-center gap-2 px-6 py-4 transition-colors font-semibold"
+        :class="activeTab === 'tareas' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-primary'"
+        @click="activeTab = 'tareas'"
       >
-        {{ tab.label }}
+        <span class="material-symbols-outlined">assignment</span>
+        Tareas
+      </button>
+      <button type="button" 
+        class="flex items-center gap-2 px-6 py-4 transition-colors font-semibold"
+        :class="activeTab === 'materiales' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-primary'"
+        @click="activeTab = 'materiales'"
+      >
+        <span class="material-symbols-outlined">book</span>
+        Materiales
+      </button>
+      <button type="button" 
+        class="flex items-center gap-2 px-6 py-4 transition-colors font-semibold"
+        :class="activeTab === 'comunidad' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-primary'"
+        @click="activeTab = 'comunidad'"
+      >
+        <span class="material-symbols-outlined">forum</span>
+        Comunidad
       </button>
     </div>
 
     <!-- Contenido Tareas -->
-    <div v-if="activeTab === 'tareas'" class="space-y-3">
-      <BaseCard v-for="tarea in tareasDelCurso" :key="tarea.id" hover class="border-l-4" :style="{ borderLeftColor: curso.color || '#1a6fa8' }">
-        <div class="flex items-start justify-between">
-          <div class="flex items-start gap-3">
-            <div class="mt-0.5 p-2 rounded-lg" :class="tarea.estado_entrega === 'pendiente' ? 'bg-amber-bg text-amber' : 'bg-mint-bg text-mint'">
-              <Clock v-if="tarea.estado_entrega === 'pendiente'" :size="20" />
-              <CheckCircle2 v-else :size="20" />
-            </div>
-            <div>
-              <p class="font-medium text-text dark:text-dark-text text-base">{{ tarea.titulo }}</p>
-              <div class="flex items-center gap-2 mt-1.5">
-                <BaseBadge :variant="tarea.estado_entrega === 'pendiente' ? 'amber' : 'mint'">
-                  {{ tarea.estado_entrega.toUpperCase() }}
-                </BaseBadge>
-                <span class="text-xs font-semibold text-primary" v-if="tarea.xp_premio">+{{ tarea.xp_premio }} XP</span>
-              </div>
+    <div v-if="activeTab === 'tareas'" class="grid grid-cols-1 gap-4">
+      <div v-for="tarea in tareasDelCurso" :key="tarea.id" 
+           :class="[
+             'border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all group relative overflow-hidden',
+             tarea.estado_entrega === 'pendiente' ? 'bg-surface-container-lowest border-border-subtle hover:shadow-md' : 'bg-surface-container-low border-border-subtle/50 opacity-80 hover:opacity-100'
+           ]">
+        <div v-if="tarea.estado_entrega === 'pendiente'" class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+        <div class="flex items-center gap-6">
+          <div :class="[
+            'w-12 h-12 rounded-xl flex items-center justify-center',
+            tarea.estado_entrega === 'pendiente' ? 'bg-primary-container/20 text-primary' : 'bg-secondary-container/30 text-on-secondary-container'
+          ]">
+            <span class="material-symbols-outlined text-2xl" :style="tarea.estado_entrega !== 'pendiente' ? 'font-variation-settings: \'FILL\' 1;' : ''">
+              {{ tarea.estado_entrega === 'pendiente' ? 'history_toggle_off' : 'check_circle' }}
+            </span>
+          </div>
+          <div>
+            <h3 class="text-headline-md font-headline-md text-on-surface transition-colors" :class="{'group-hover:text-primary': tarea.estado_entrega === 'pendiente'}">
+              {{ tarea.titulo }}
+            </h3>
+            <div class="flex flex-wrap items-center gap-3 mt-1">
+              <span :class="[
+                'px-3 py-1 rounded-full text-label-sm font-semibold uppercase tracking-wider',
+                tarea.estado_entrega === 'pendiente' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-secondary-container text-on-secondary-container'
+              ]">
+                {{ tarea.estado_entrega === 'pendiente' ? 'Pendiente' : 'Entregada' }}
+              </span>
+              <span v-if="tarea.xp_premio" :class="[
+                'font-bold text-label-md flex items-center gap-1',
+                tarea.estado_entrega === 'pendiente' ? 'text-primary' : 'text-on-secondary-container'
+              ]">
+                <span v-if="tarea.estado_entrega !== 'pendiente'" class="material-symbols-outlined text-sm">stars</span>
+                {{ tarea.estado_entrega !== 'pendiente' ? 'Ganado: ' : '' }}+{{ tarea.xp_premio }} XP
+              </span>
+              <span v-if="tarea.estado_entrega === 'pendiente'" class="text-on-surface-variant text-body-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">event</span>
+                {{ tarea.creado_en ? new Date(tarea.creado_en).toLocaleDateString() : new Date().toLocaleDateString() }}
+              </span>
             </div>
           </div>
-          <BaseButton size="sm" :variant="tarea.estado_entrega === 'pendiente' ? 'primary' : tarea.estado_entrega === 'revisado' ? 'ghost' : 'secondary'" @click="abrirEntrega(tarea)">
-            {{ tarea.estado_entrega === 'pendiente' ? 'Entregar' : tarea.estado_entrega === 'revisado' ? 'Ver Corrección' : 'Actualizar' }}
-          </BaseButton>
         </div>
-      </BaseCard>
-      
-      <div v-if="tareasDelCurso.length === 0 && !cursosStore.loading" class="text-center py-10 bg-surface dark:bg-dark-card2 rounded-xl">
+        <button type="button" 
+          v-if="tarea.estado_entrega === 'pendiente'"
+          @click="abrirEntrega(tarea)"
+          class="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:brightness-110 active:scale-95 transition-all shadow-sm shrink-0"
+        >
+          Entregar
+        </button>
+        <button type="button" 
+          v-else
+          class="border border-primary text-primary px-8 py-3 rounded-xl font-bold hover:bg-primary-fixed-dim transition-all shrink-0"
+        >
+          Ver Corrección
+        </button>
+      </div>
+
+      <div v-if="tareasDelCurso.length === 0 && !cursosStore.loading" class="text-center py-10 bg-surface-container-low rounded-2xl border border-border-subtle">
         <p class="text-4xl mb-2">🎉</p>
-        <p class="font-medium text-text dark:text-dark-text">¡Estás al día!</p>
-        <p class="text-sm text-text-muted">No tienes tareas asignadas en este curso.</p>
+        <p class="font-medium text-on-surface text-headline-md">¡Estás al día!</p>
+        <p class="text-sm text-on-surface-variant">No tienes tareas asignadas en este curso.</p>
       </div>
     </div>
 
     <!-- Contenido Materiales -->
-    <div v-if="activeTab === 'materiales'" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div v-for="mat in materiales" :key="mat.id" class="block outline-none">
-        <BaseCard class="h-full">
-        <div class="flex items-start gap-3">
-          <div class="w-12 h-12 bg-primary-bg dark:bg-primary/10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-            {{ getIcon(mat.tipo) }}
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-text dark:text-dark-text truncate">{{ mat.titulo }}</p>
-            <p class="text-xs text-text-muted mt-0.5 line-clamp-1">{{ mat.descripcion || 'Sin descripción' }}</p>
-            <div class="flex flex-wrap items-center gap-2 mt-2">
-              <BaseBadge size="sm" variant="primary">{{ mat.tipo }}</BaseBadge>
-              <a v-if="mat.archivo_url" :href="mat.archivo_url" target="_blank" rel="noopener noreferrer" class="text-[10px] text-primary font-bold hover:underline bg-primary/10 px-2 py-0.5 rounded-lg flex items-center">
-                🔗 Enlace
-              </a>
-              <button v-for="(arch, idx) in mat.archivos" :key="idx" @click.stop="descargarArchivo(arch)" class="text-[10px] text-mint font-bold hover:underline bg-mint/10 px-2 py-0.5 rounded-lg flex items-center">
-                <DownloadCloud :size="12" class="mr-1 inline" /> {{ arch.nombre }}
-              </button>
-            </div>
+    <div v-if="activeTab === 'materiales'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-for="mat in materiales" :key="mat.id" class="bg-surface-container-lowest border border-border-subtle rounded-2xl p-6 flex flex-col md:flex-row gap-4 hover:shadow-md transition-shadow group">
+        <div class="w-12 h-12 bg-primary-container/10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-primary">
+          {{ getIcon(mat.tipo) }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-headline-md font-headline-md text-on-surface truncate group-hover:text-primary transition-colors">{{ mat.titulo }}</p>
+          <p class="text-body-sm text-on-surface-variant mt-1 line-clamp-2">{{ mat.descripcion || 'Sin descripción' }}</p>
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <span class="px-3 py-1 bg-primary-container text-on-primary-container rounded-full text-label-sm font-semibold uppercase tracking-wider">{{ mat.tipo }}</span>
+            <a v-if="mat.archivo_url" :href="mat.archivo_url" target="_blank" rel="noopener noreferrer" class="text-label-sm text-primary font-bold hover:underline bg-primary/10 px-3 py-1 rounded-full flex items-center">
+              <span class="material-symbols-outlined text-[14px] mr-1">link</span> Enlace
+            </a>
+            <button type="button" v-for="(arch, idx) in mat.archivos" :key="idx" @click.stop="descargarArchivo(arch)" class="text-label-sm text-secondary font-bold hover:underline bg-secondary/10 px-3 py-1 rounded-full flex items-center">
+              <span class="material-symbols-outlined text-[14px] mr-1">download</span> {{ arch.nombre }}
+            </button>
           </div>
         </div>
-      </BaseCard>
       </div>
       
-      <div v-if="materiales.length === 0 && !cursosStore.loading" class="col-span-full text-center py-10 bg-surface dark:bg-dark-card2 rounded-xl">
+      <div v-if="materiales.length === 0 && !cursosStore.loading" class="col-span-full text-center py-10 bg-surface-container-low rounded-2xl border border-border-subtle">
         <p class="text-4xl mb-2">📚</p>
-        <p class="font-medium text-text dark:text-dark-text">Sin material</p>
-        <p class="text-sm text-text-muted">El docente aún no ha subido material para este curso.</p>
+        <p class="font-medium text-on-surface text-headline-md">Sin material</p>
+        <p class="text-sm text-on-surface-variant">El docente aún no ha subido material para este curso.</p>
       </div>
     </div>
 
     <!-- Contenido Comunidad (Chat) -->
-    <div v-if="activeTab === 'comunidad'" class="flex flex-col h-[500px] bg-card dark:bg-dark-card border border-border dark:border-white/10 rounded-2xl overflow-hidden">
-      <!-- Lista de Mensajes -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-surface/50 dark:bg-dark-card2/50">
-        <div v-if="loadingMensajes && mensajes.length === 0" class="text-center py-4 text-text-muted">
+    <div v-if="activeTab === 'comunidad'" class="flex flex-col h-[500px] bg-surface-container-lowest border border-border-subtle rounded-3xl overflow-hidden shadow-sm">
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#3e484f_1px,transparent_1px)] [background-size:16px_16px]">
+        <div v-if="loadingMensajes && mensajes.length === 0" class="text-center py-4 text-on-surface-variant">
           Cargando mensajes...
         </div>
         <div v-else-if="mensajes.length === 0" class="text-center py-10">
           <p class="text-4xl mb-2">👋</p>
-          <p class="font-medium text-text dark:text-dark-text">¡Sé el primero en saludar!</p>
-          <p class="text-sm text-text-muted">Escribe un mensaje para tu clase.</p>
+          <p class="font-medium text-on-surface text-headline-md">¡Sé el primero en saludar!</p>
+          <p class="text-sm text-on-surface-variant">Escribe un mensaje para tu clase.</p>
         </div>
         
         <div 
@@ -325,21 +411,20 @@ function descargarArchivo(archivo: any) {
           :key="msg.id" 
           :class="['flex gap-3 max-w-[85%]', msg.autor?.nombre === authStore.perfil?.nombre ? 'ml-auto flex-row-reverse' : 'mr-auto']"
         >
-          <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0 mt-1">
+          <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-sm font-bold overflow-hidden flex-shrink-0 mt-1 shadow-sm border-2 border-surface-container-lowest">
             <img v-if="msg.autor?.avatar_url && (msg.autor.avatar_url.startsWith('http') || msg.autor.avatar_url.startsWith('data'))" :src="msg.autor.avatar_url" class="w-full h-full object-cover" />
-            <span v-else-if="msg.autor?.avatar_url" class="text-sm">{{ msg.autor.avatar_url }}</span>
             <span v-else>{{ msg.autor?.nombre?.charAt(0) || 'U' }}</span>
           </div>
           <div :class="['flex flex-col', msg.autor?.nombre === authStore.perfil?.nombre ? 'items-end' : 'items-start']">
             <div class="flex items-baseline gap-2 mb-1">
-              <span class="text-xs font-bold text-text dark:text-dark-text">{{ msg.autor?.nombre }}</span>
-              <span v-if="msg.autor?.rol === 'docente'" class="text-[9px] bg-mint text-white px-1.5 py-0.5 rounded uppercase font-bold">Docente</span>
-              <span class="text-[10px] text-text-muted">{{ new Date(msg.creado_en).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
+              <span class="text-label-md font-bold text-on-surface">{{ msg.autor?.nombre }}</span>
+              <span v-if="msg.autor?.rol === 'docente'" class="text-[10px] bg-secondary text-on-secondary px-2 py-0.5 rounded-full uppercase font-bold tracking-wide">Docente</span>
+              <span class="text-label-sm text-on-surface-variant font-normal">{{ new Date(msg.creado_en).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
             </div>
-            <div :class="['px-4 py-2 rounded-2xl text-sm shadow-sm', 
+            <div :class="['px-5 py-3 rounded-2xl text-body-md shadow-sm', 
               msg.autor?.nombre === authStore.perfil?.nombre 
-                ? 'bg-primary text-white rounded-tr-none' 
-                : 'bg-white dark:bg-dark-card text-text dark:text-dark-text border border-border dark:border-white/10 rounded-tl-none'
+                ? 'bg-primary text-on-primary rounded-tr-sm' 
+                : 'bg-surface-container-lowest text-on-surface border border-border-subtle rounded-tl-sm'
             ]">
               {{ msg.contenido }}
             </div>
@@ -347,67 +432,71 @@ function descargarArchivo(archivo: any) {
         </div>
       </div>
 
-      <!-- Input Área -->
-      <div class="p-4 bg-surface dark:bg-dark-card2 border-t border-border dark:border-white/10">
-        <form @submit.prevent="enviarMensaje" class="flex gap-2">
-          <input 
+      <div class="p-4 bg-surface-container-lowest border-t border-border-subtle z-10">
+        <form @submit.prevent="enviarMensaje" class="flex items-center gap-3 max-w-4xl mx-auto">
+          <input id="nuevoMensaje" name="nuevoMensaje" 
             v-model="nuevoMensaje"
             type="text" 
             placeholder="Escribe tu mensaje..."
-            class="flex-1 bg-card dark:bg-dark-bg border border-border dark:border-white/10 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+            class="flex-1 h-12 px-6 bg-surface-container-low border border-border-subtle rounded-full font-body-md text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-sm"
           />
-          <BaseButton type="submit" variant="primary" size="sm" class="px-4 shrink-0 rounded-xl">
-            <Send :size="16" />
-          </BaseButton>
+          <button type="submit" class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container shadow-md transition-all disabled:opacity-50 disabled:scale-95 active:scale-95 shrink-0">
+            <span class="material-symbols-outlined text-[20px] ml-1">send</span>
+          </button>
         </form>
       </div>
     </div>
 
     <!-- Modal Entregar Tarea -->
-    <div v-if="showEntregaModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-text/50 dark:bg-dark-bg/80 backdrop-blur-sm animate-fade-in">
-      <div class="bg-card dark:bg-dark-card rounded-2xl w-full max-w-md shadow-modal p-6 relative max-h-[90vh] overflow-y-auto">
-        <h2 class="font-bold text-xl mb-3 text-text dark:text-dark-text">Entregar: {{ tareaActiva?.titulo }}</h2>
-        <p class="text-sm text-text-muted mb-5">Puedes pegar un enlace (Drive, YouTube) o subir un archivo directamente desde tu equipo.</p>
+    <div v-if="showEntregaModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-sm animate-fade-in">
+      <div class="bg-surface-container-lowest rounded-3xl w-full max-w-md shadow-xl p-8 relative max-h-[90vh] overflow-y-auto">
+        <h2 class="font-headline-md text-headline-md mb-3 text-on-surface">Entregar: {{ tareaActiva?.titulo }}</h2>
+        <p class="text-body-sm text-on-surface-variant mb-6">Puedes pegar un enlace (Drive, YouTube) o subir un archivo directamente desde tu equipo.</p>
         
-        <label class="block text-sm font-semibold mb-1.5">Enlace del trabajo (Opcional)</label>
-        <input 
+        <label class="block text-label-md font-bold mb-2 text-on-surface">Enlace del trabajo (Opcional)</label>
+        <input id="entregaForm_archivo_url" name="entregaForm_archivo_url" 
           v-model="entregaForm.archivo_url" 
           type="url" 
           placeholder="https://..." 
-          class="w-full bg-surface dark:bg-dark-card2 border border-border dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/50 mb-4 text-sm" 
+          class="w-full bg-surface-container-low border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-6 text-body-md transition-all" 
         />
 
-        <label class="block text-sm font-semibold mb-1">Archivos Adjuntos (Max 5MB)</label>
-        <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer bg-primary/5 hover:bg-primary/10 transition-colors">
+        <label class="block text-label-md font-bold mb-2 text-on-surface">Archivos Adjuntos (Max 5MB)</label>
+        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary/30 rounded-2xl cursor-pointer bg-primary/5 hover:bg-primary/10 transition-colors mb-6">
           <div class="flex flex-col items-center justify-center pt-5 pb-6">
-            <span class="text-2xl mb-1 text-primary">📤</span>
-            <p class="text-sm text-text-muted"><span class="font-bold text-primary">Haz clic para subir</span> o arrastra aquí</p>
+            <span class="material-symbols-outlined text-4xl mb-2 text-primary">upload_file</span>
+            <p class="text-body-sm text-on-surface-variant"><span class="font-bold text-primary">Haz clic para subir</span> o arrastra aquí</p>
           </div>
-          <input type="file" class="hidden" multiple @change="handleEntregaFileUpload" />
+          <input id="input_file_5" name="input_file_5" type="file" class="hidden" multiple @change="handleEntregaFileUpload" />
         </label>
 
-        <!-- Lista de Archivos -->
-        <div v-if="entregaForm.archivos.length > 0" class="space-y-2 mt-4">
-          <div v-for="(file, idx) in entregaForm.archivos" :key="idx" class="flex items-center justify-between p-2 bg-surface dark:bg-dark-card2 rounded-lg border border-border dark:border-white/10">
-            <div class="flex items-center gap-2 overflow-hidden">
-              <span class="text-lg">📄</span>
-              <span class="text-xs truncate font-medium text-text dark:text-dark-text">{{ file.nombre }}</span>
+        <div v-if="entregaForm.archivos.length > 0" class="space-y-3 mb-6">
+          <div v-for="(file, idx) in entregaForm.archivos" :key="idx" class="flex items-center justify-between p-3 bg-surface-container-low rounded-xl border border-border-subtle-subtle">
+            <div class="flex items-center gap-3 overflow-hidden">
+              <span class="material-symbols-outlined text-primary">draft</span>
+              <span class="text-label-sm truncate font-medium text-on-surface">{{ file.nombre }}</span>
             </div>
-            <button @click="removeEntregaArchivo(idx)" class="text-danger hover:text-danger/80 px-2 font-bold">&times;</button>
+            <button type="button" @click="removeEntregaArchivo(idx)" class="text-error hover:text-error/80 px-2 font-bold text-lg">&times;</button>
           </div>
         </div>
         
-        <div class="flex justify-end gap-3 mt-6">
-          <BaseButton variant="ghost" @click="showEntregaModal = false">Cancelar</BaseButton>
-          <BaseButton variant="primary" :loading="entregando" @click="enviarEntrega" :disabled="!entregaForm.archivo_url && entregaForm.archivos.length === 0">
-            Enviar Tarea
-          </BaseButton>
+        <div class="flex justify-end gap-3 mt-8">
+          <button type="button" @click="showEntregaModal = false" class="px-6 py-3 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">
+            Cancelar
+          </button>
+          <button type="button" 
+            @click="enviarEntrega" 
+            :disabled="!entregaForm.archivo_url && entregaForm.archivos.length === 0 || entregando"
+            class="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:brightness-110 active:scale-95 transition-all shadow-sm disabled:opacity-50 disabled:active:scale-100"
+          >
+            {{ entregando ? 'Enviando...' : 'Enviar Tarea' }}
+          </button>
         </div>
       </div>
     </div>
   </div>
   
-  <div v-else-if="cursosStore.loading" class="p-6 text-center text-text-muted">
+  <div v-else-if="cursosStore.loading" class="p-6 text-center text-on-surface-variant font-medium">
     Cargando curso...
   </div>
 </template>

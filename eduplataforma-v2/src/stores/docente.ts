@@ -56,41 +56,48 @@ export const useDocenteStore = defineStore('docente', () => {
           cursos.value = dbCursos as any
           await idb.putMany('cursos', dbCursos as any)
           
-          // Cargar todas las entregas que correspondan a los materiales de sus cursos
-          const { data: dbEntregas } = await supabase
-            .from('entregas')
-            .select('*, material:materiales(*), alumno:perfiles(nombre, avatar_url)')
-            
-          if (dbEntregas) {
-            // Filtrar las que pertenecen a sus cursos (basado en material.curso_id)
-            const entregasPropias = dbEntregas.filter(e => cursos.value.some(c => c.id === (e.material as any)?.curso_id))
-            // Limpiar datos para la store y para IDB
-            const entregasLimpias = entregasPropias.map((e: any) => ({
-              ...e,
-              material: undefined,
-              alumno: undefined,
-              _alumno_nombre: e.alumno?.nombre,
-              _material_titulo: e.material?.titulo,
-              _curso_id: e.material?.curso_id
-            }))
-            entregas.value = entregasLimpias as any
-            
-            // Guardar limpias en IDB
-            await idb.putMany('entregas', entregasLimpias as any)
-          }
-
-          // Cargar alumnos inscritos en sus cursos
           const cursoIds = dbCursos.map(c => c.id)
+          let materialIds: string[] = []
+          
           if (cursoIds.length > 0) {
-            const { data: dbInscripciones } = await supabase
-              .from('inscripciones')
-              .select('*, curso:cursos(nombre), alumno:perfiles(*)')
-              .in('curso_id', cursoIds)
-            
-            if (dbInscripciones) {
+            // Paralelizar las consultas independientes para acelerar drásticamente la carga
+            const [matRes, inscRes, logRes, convRes] = await Promise.all([
+              supabase.from('materiales').select('*').in('curso_id', cursoIds),
+              supabase.from('inscripciones').select('*, curso:cursos(nombre), alumno:perfiles!alumno_id(*)').in('curso_id', cursoIds),
+              supabase.from('logros_docente').select('*, logros_asignados(*)').eq('docente_id', docenteId),
+              supabase.from('conversaciones').select('*, mensajes(*)').or(`curso_id.in.(${cursoIds.join(',')}),participante_1.eq.${docenteId},participante_2.eq.${docenteId}`)
+            ])
+
+            if (matRes.data) {
+              materiales.value = matRes.data
+              materialIds = matRes.data.map(m => m.id)
+              
+              // Cargar entregas correspondientes a esos materiales
+              if (materialIds.length > 0) {
+                const { data: dbEntregas } = await supabase
+                  .from('entregas')
+                  .select('*, material:materiales(*), alumno:perfiles!alumno_id(nombre, avatar_url)')
+                  .in('material_id', materialIds)
+                  
+                if (dbEntregas) {
+                  const entregasLimpias = dbEntregas.map((e: any) => ({
+                    ...e,
+                    material: undefined,
+                    alumno: undefined,
+                    _alumno_nombre: e.alumno?.nombre,
+                    _material_titulo: e.material?.titulo,
+                    _curso_id: e.material?.curso_id
+                  }))
+                  entregas.value = entregasLimpias as any
+                  await idb.putMany('entregas', entregasLimpias as any)
+                }
+              }
+            }
+
+            if (inscRes.data) {
               // Deduplicar alumnos
               const uniqueAlumnos = new Map()
-              dbInscripciones.forEach((i: any) => {
+              inscRes.data.forEach((i: any) => {
                 if (i.alumno) {
                   uniqueAlumnos.set(i.alumno.id, {
                     id: i.alumno.id,
@@ -108,22 +115,10 @@ export const useDocenteStore = defineStore('docente', () => {
               alumnos.value = Array.from(uniqueAlumnos.values())
             }
 
-            // Cargar materiales
-            const { data: matData } = await supabase
-              .from('materiales')
-              .select('*')
-              .in('curso_id', cursoIds)
-            if (matData) materiales.value = matData
-
-            // Cargar logros asignados (los que otorgó este docente)
-            const { data: logData } = await supabase
-              .from('logros_docente')
-              .select('*, logros_asignados(*)')
-              .eq('docente_id', docenteId)
-            if (logData) {
-               logrosDocente.value = logData
+            if (logRes.data) {
+               logrosDocente.value = logRes.data
                let asignados: any[] = []
-               logData.forEach(l => {
+               logRes.data.forEach(l => {
                  if (l.logros_asignados) {
                    asignados = [...asignados, ...l.logros_asignados]
                  }
@@ -131,12 +126,9 @@ export const useDocenteStore = defineStore('docente', () => {
                logrosAsignados.value = asignados
             }
 
-            // Cargar conversaciones
-            const { data: convData } = await supabase
-              .from('conversaciones')
-              .select('*, mensajes(*)')
-              .or(`curso_id.in.(${cursoIds.join(',')}),participante_1.eq.${docenteId},participante_2.eq.${docenteId}`)
-            if (convData) conversaciones.value = convData
+            if (convRes.data) {
+              conversaciones.value = convRes.data
+            }
           }
         }
       }

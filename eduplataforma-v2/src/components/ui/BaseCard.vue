@@ -1,13 +1,13 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  hover?: boolean
+ hover?: boolean
 }>(), {
-  hover: false
+ hover: false
 })
 </script>
 
 <template>
-  <div :class="['bg-card dark:bg-dark-card rounded-xl p-4 md:p-5 shadow-card', hover ? 'card-hover cursor-pointer' : '']">
-    <slot />
-  </div>
+ <div :class="['bg-surface-container-lowest rounded-xl p-4 md:p-5 shadow-card', hover ? 'card-hover cursor-pointer' : '']">
+ <slot />
+ </div>
 </template>

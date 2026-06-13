@@ -55,10 +55,10 @@ export const useDirectivoStore = defineStore('directivo', () => {
       const { count: profesoresTotales } = await supabase.from('perfiles').select('*', { count: 'exact', head: true }).eq('rol', 'docente')
 
       // 3. Promedio del colegio (promedio de todas las entregas con nota)
-      const { data: entregasConNota } = await supabase.from('entregas').select('nota').not('nota', 'is', null)
+      const { data: entregasConNota } = await supabase.from('entregas').select('calificacion').not('calificacion', 'is', null)
       let promedio = 0
       if (entregasConNota && entregasConNota.length > 0) {
-        const total = entregasConNota.reduce((sum, e) => sum + (e.nota || 0), 0)
+        const total = entregasConNota.reduce((sum, e) => sum + (e.calificacion || 0), 0)
         promedio = Number((total / entregasConNota.length).toFixed(1))
       }
 
@@ -67,7 +67,7 @@ export const useDirectivoStore = defineStore('directivo', () => {
 
       // 5. Asistencia digital (Alumnos que han enviado alguna tarea en los últimos 7 días)
       const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      const { data: entregasRecientes } = await supabase.from('entregas').select('alumno_id').gte('creado_en', sieteDiasAtras)
+      const { data: entregasRecientes } = await supabase.from('entregas').select('alumno_id').gte('entregado_en', sieteDiasAtras)
       
       const alumnosUnicosRecientes = new Set(entregasRecientes?.map(e => e.alumno_id))
 
@@ -82,15 +82,15 @@ export const useDirectivoStore = defineStore('directivo', () => {
       // 6. Rendimiento por Cursos
       const { data: cursosData } = await supabase.from('cursos').select('id, nombre, docente_id')
       if (cursosData) {
-        const { data: entregasAll } = await supabase.from('entregas').select('nota, material_id, material:materiales(curso_id)')
+        const { data: entregasAll } = await supabase.from('entregas').select('calificacion, material_id, material:materiales(curso_id)')
         
         cursos.value = cursosData.map(curso => {
           const entregasCurso = entregasAll?.filter((e: any) => e.material && e.material.curso_id === curso.id) || []
-          const entregasConNota = entregasCurso.filter(e => e.nota !== null)
+          const entregasConNota = entregasCurso.filter(e => e.calificacion !== null)
           
           let promCurso = 0
           if (entregasConNota.length > 0) {
-            const sum = entregasConNota.reduce((acc, e) => acc + (e.nota || 0), 0)
+            const sum = entregasConNota.reduce((acc, e) => acc + (e.calificacion || 0), 0)
             promCurso = sum / entregasConNota.length
           }
 

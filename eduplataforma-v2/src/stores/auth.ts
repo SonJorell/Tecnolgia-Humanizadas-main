@@ -126,7 +126,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function initSession(): void {
+  async function initialize(): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      user.value = session.user
+      await loadPerfil()
+    } else {
+      user.value = null
+      perfil.value = null
+      loading.value = false
+    }
+
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         user.value = session.user
@@ -153,6 +163,6 @@ export const useAuthStore = defineStore('auth', () => {
     updatePerfil,
     guardarPerfil,
     cambiarPassword,
-    initSession
+    initialize
   }
 })

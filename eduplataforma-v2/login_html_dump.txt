@@ -1,0 +1,91 @@
+<USER_REQUEST>
+aplica el siguiete codigo para que se vea asi el login
+
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EduPlataforma V2.0 - Iniciar Sesión</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Typography: Inter & Hanken Grotesk -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#e3eef4",
+                    "surface": "#f9f9ff",
+                    "surface-dim": "#d3daef",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#626c72",
+                    "surface-container-high": "#e1e8fd",
+                    "on-secondary-fixed": "#002115",
+                    "surface-tint": "#00639a",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#404750",
+                    "on-primary-fixed-variant": "#004a76",
+                    "surface-bright": "#f9f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "background": "#f9f9ff",
+                    "on-surface": "#141b2b",
+                    "surface-container-low": "#f1f3ff",
+                    "surface-soft": "#F8FAFC",
+                    "border-subtle": "#E2E8F0",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#edf0ff",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#7afac7",
+                 
+<truncated 10705 bytes>
+    J2N Software • Santo Tomás Arica 2026
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Professional Discrete Footer (Desktop Wide) -->
+<footer class="hidden lg:block w-full py-8 text-center bg-transparent border-t border-white/40 absolute bottom-0">
+<div class="max-w-container-max mx-auto px-margin-mobile">
+<p class="font-body-sm text-body-sm text-outline flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4">
+<span>J2N Software</span>
+<span class="hidden md:inline text-outline/30">•</span>
+<span>Santo Tomás Arica 2026</span>
+<span class="hidden md:inline text-outline/30">•</span>
+<span class="flex items-center gap-1">
+                    Plataforma de Educación Digital v2.0.4
+                </span>
+</p>
+</div>
+</footer>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const passInput = document.getElementById('password');
+            const toggleBtn = document.getElementById('togglePassword');
+            
+            toggleBtn.addEventListener('click', () => {
+                const isPass = passInput.type === 'password';
+                passInput.type = isPass ? 'text' : 'password';
+                toggleBtn.querySelector('.material-symbols-outlined').textContent = isPass ? 'visibility_off' : 'visibility';
+            });
+        });
+    </script>
+</body></html>
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-01T23:01:18-04:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\jorel\Downloads\Tecno\Tecnolgia-Humanizadas-main\eduplataforma-v2\src\features\alumno\Inicio.vue (LANGUAGE_VUE)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\jorel\Downloads\Tecno\Tecnolgia-Humanizadas-main\eduplataforma-v2\src\features\alumno\Inicio.vue (LANGUAGE_VUE)
+- c:\Users\jorel\Downloads\Tecno\Tecnolgia-Humanizadas-main\eduplataforma-v2\src\utils\profanityFilter.ts (LANGUAGE_TYPESCRIPT)
+- c:\Users\jorel\Downloads\Tecno\Tecnolgia-Humanizadas-main\.git\COMMIT_EDITMSG (LANGUAGE_UNSPECIFIED)
+</ADDITIONAL_METADATA>

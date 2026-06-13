@@ -88,20 +88,20 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display font-extrabold text-2xl md:text-3xl text-text dark:text-dark-text">
+        <h1 class="font-headline-lg font-extrabold text-2xl md:text-3xl text-on-surface dark:text-on-surface">
           📈 Dashboard Analítico
         </h1>
-        <p class="text-sm text-text-muted mt-1">Métricas de rendimiento de tus cursos en tiempo real.</p>
+        <p class="text-sm text-on-surface-muted mt-1">Métricas de rendimiento de tus cursos en tiempo real.</p>
       </div>
-      <div class="flex items-center gap-2 bg-surface dark:bg-dark-card2 rounded-xl p-1">
-        <button
+      <div class="flex items-center gap-2 bg-surface dark:bg-surface-container rounded-xl p-1">
+        <button type="button"
           v-for="p in periodos" :key="p"
           @click="periodoActivo = p"
           :class="[
             'px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200',
             periodoActivo === p
               ? 'bg-primary text-white shadow-sm'
-              : 'text-text-muted dark:text-dark-muted hover:text-text dark:hover:text-dark-text'
+              : 'text-on-surface-muted dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface'
           ]"
         >
           {{ p }}
@@ -111,12 +111,12 @@ onMounted(async () => {
 
     <!-- Comunicados (Anuncios Oficiales) -->
     <div v-if="comunicados.length > 0" class="space-y-3">
-      <div v-for="com in comunicados" :key="com.id" class="flex items-start gap-3 bg-mint-bg dark:bg-mint/10 border border-mint/20 text-text dark:text-dark-text px-4 py-3 rounded-xl shadow-sm">
-        <Megaphone class="text-mint flex-shrink-0 mt-0.5" :size="20" />
+      <div v-for="com in comunicados" :key="com.id" class="flex items-start gap-3 bg-secondary-container dark:bg-mint/10 border border-mint/20 text-on-surface dark:text-on-surface px-4 py-3 rounded-xl shadow-sm">
+        <Megaphone class="text-on-secondary-container flex-shrink-0 mt-0.5" :size="20" />
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <h3 class="font-bold text-mint">{{ com.titulo }}</h3>
-            <span class="text-[10px] uppercase bg-mint/20 text-mint px-1.5 py-0.5 rounded font-bold">Dirección</span>
+            <h3 class="font-bold text-on-secondary-container">{{ com.titulo }}</h3>
+            <span class="text-[10px] uppercase bg-mint/20 text-on-secondary-container px-1.5 py-0.5 rounded font-bold">Dirección</span>
           </div>
           <p class="text-sm opacity-90">{{ com.contenido }}</p>
         </div>
@@ -125,56 +125,56 @@ onMounted(async () => {
 
     <!-- KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-card dark:bg-dark-card rounded-xl p-4 shadow-card card-hover">
+      <div class="bg-surface-container-lowest dark:bg-surface-container-low rounded-xl p-4 shadow-card card-hover">
         <div class="flex items-center justify-between mb-3">
-          <div class="w-10 h-10 rounded-lg bg-mint-bg dark:bg-mint/20 flex items-center justify-center">
-            <TrendingUp :size="20" class="text-mint" />
+          <div class="w-10 h-10 rounded-lg bg-secondary-container dark:bg-mint/20 flex items-center justify-center">
+            <TrendingUp :size="20" class="text-on-secondary-container" />
           </div>
           <span :class="[
             'flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full',
-            kpis.cambioPromedio >= 0 ? 'bg-mint-bg text-mint' : 'bg-danger-bg text-danger'
+            kpis.cambioPromedio >= 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-danger-bg text-danger'
           ]">
             <component :is="kpis.cambioPromedio >= 0 ? ArrowUpRight : ArrowDownRight" :size="12" />
             {{ kpis.cambioPromedio >= 0 ? '+' : '' }}{{ kpis.cambioPromedio }}
           </span>
         </div>
-        <p class="font-display font-extrabold text-3xl text-text dark:text-dark-text">{{ kpis.promedioGeneral }}</p>
-        <p class="text-xs text-text-muted mt-0.5">Promedio General</p>
+        <p class="font-headline-lg font-extrabold text-3xl text-on-surface dark:text-on-surface">{{ kpis.promedioGeneral }}</p>
+        <p class="text-xs text-on-surface-muted mt-0.5">Promedio General</p>
       </div>
 
-      <div class="bg-card dark:bg-dark-card rounded-xl p-4 shadow-card card-hover">
+      <div class="bg-surface-container-lowest dark:bg-surface-container-low rounded-xl p-4 shadow-card card-hover">
         <div class="flex items-center justify-between mb-3">
-          <div class="w-10 h-10 rounded-lg bg-primary-bg dark:bg-primary/20 flex items-center justify-center">
+          <div class="w-10 h-10 rounded-lg bg-primary-container dark:bg-primary/20 flex items-center justify-center">
             <Target :size="20" class="text-primary" />
           </div>
           <span :class="[
             'flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full',
-            kpis.cambioEntrega >= 0 ? 'bg-mint-bg text-mint' : 'bg-danger-bg text-danger'
+            kpis.cambioEntrega >= 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-danger-bg text-danger'
           ]">
             <component :is="kpis.cambioEntrega >= 0 ? ArrowUpRight : ArrowDownRight" :size="12" />
             {{ kpis.cambioEntrega >= 0 ? '+' : '' }}{{ kpis.cambioEntrega }}%
           </span>
         </div>
-        <p class="font-display font-extrabold text-3xl text-text dark:text-dark-text">{{ kpis.tasaEntrega }}%</p>
-        <p class="text-xs text-text-muted mt-0.5">Tasa de Entregas</p>
+        <p class="font-headline-lg font-extrabold text-3xl text-on-surface dark:text-on-surface">{{ kpis.tasaEntrega }}%</p>
+        <p class="text-xs text-on-surface-muted mt-0.5">Tasa de Entregas</p>
       </div>
 
       <StatCard
         :icon="Clock"
         label="Por Corregir Hoy"
         :value="kpis.correccionesHoy"
-        iconBg="bg-amber-bg dark:bg-amber/20 text-amber"
+        iconBg="bg-amber-100 dark:bg-amber-900/30 dark:bg-amber/20 text-amber-800 dark:text-amber-300"
         subtitle="Tareas esperando revisión"
       />
 
-      <div class="bg-card dark:bg-dark-card rounded-xl p-4 shadow-card card-hover relative overflow-hidden">
+      <div class="bg-surface-container-lowest dark:bg-surface-container-low rounded-xl p-4 shadow-card card-hover relative overflow-hidden">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-lg bg-danger-bg dark:bg-danger/20 flex items-center justify-center flex-shrink-0">
             <AlertTriangle :size="20" class="text-danger" />
           </div>
           <div class="min-w-0">
-            <p class="font-display font-extrabold text-2xl text-danger leading-none">{{ kpis.alumnosEnRiesgo }}</p>
-            <p class="text-xs text-text-muted dark:text-dark-muted mt-0.5">Alumnos en Riesgo</p>
+            <p class="font-headline-lg font-extrabold text-2xl text-danger leading-none">{{ kpis.alumnosEnRiesgo }}</p>
+            <p class="text-xs text-on-surface-muted dark:text-on-surface-variant mt-0.5">Alumnos en Riesgo</p>
           </div>
         </div>
         <!-- pulse indicator -->
@@ -188,10 +188,10 @@ onMounted(async () => {
       <!-- Tendencia Semanal (visual bar chart) -->
       <div class="lg:col-span-2 space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="font-display font-bold text-lg text-text dark:text-dark-text flex items-center gap-2">
+          <h2 class="font-headline-lg font-bold text-lg text-on-surface dark:text-on-surface flex items-center gap-2">
             <BarChart3 :size="20" class="text-primary" /> Entregas Diarias
           </h2>
-          <span class="text-xs text-text-muted">{{ periodoActivo }}</span>
+          <span class="text-xs text-on-surface-muted">{{ periodoActivo }}</span>
         </div>
 
         <BaseCard class="p-6">
@@ -208,7 +208,7 @@ onMounted(async () => {
                   :style="{ height: `${(d.entregas / maxEntregas) * 140}px` }"
                 >
                   <!-- Tooltip -->
-                  <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-text dark:bg-dark-card text-white text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md z-10">
+                  <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-text dark:bg-surface-container-low text-white text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md z-10">
                     {{ d.entregas }} entregas · Prom {{ d.promedio }}
                   </div>
                   <!-- Value on bar -->
@@ -218,7 +218,7 @@ onMounted(async () => {
                 </div>
               </div>
               <!-- Day label -->
-              <span class="text-xs font-medium text-text-muted">{{ d.dia }}</span>
+              <span class="text-xs font-medium text-on-surface-muted">{{ d.dia }}</span>
             </div>
           </div>
         </BaseCard>
@@ -226,16 +226,16 @@ onMounted(async () => {
 
       <!-- Activity Feed -->
       <div class="space-y-4">
-        <h2 class="font-display font-bold text-lg text-text dark:text-dark-text">Actividad Reciente</h2>
+        <h2 class="font-headline-lg font-bold text-lg text-on-surface dark:text-on-surface">Actividad Reciente</h2>
         <BaseCard class="p-0 divide-y divide-border dark:divide-white/10">
           <div
             v-for="(act, i) in actividadReciente" :key="i"
-            class="flex items-start gap-3 p-4 hover:bg-surface/50 dark:hover:bg-dark-card2/50 transition-colors"
+            class="flex items-start gap-3 p-4 hover:bg-surface/50 dark:hover:bg-surface-container/50 transition-colors"
           >
             <span class="text-xl mt-0.5 flex-shrink-0">{{ act.icono }}</span>
             <div class="min-w-0 flex-1">
-              <p class="text-sm text-text dark:text-dark-text leading-snug">{{ act.texto }}</p>
-              <p class="text-[11px] text-text-muted mt-1">{{ act.tiempo }}</p>
+              <p class="text-sm text-on-surface dark:text-on-surface leading-snug">{{ act.texto }}</p>
+              <p class="text-[11px] text-on-surface-muted mt-1">{{ act.tiempo }}</p>
             </div>
           </div>
         </BaseCard>
@@ -245,8 +245,8 @@ onMounted(async () => {
     <!-- Rendimiento por Curso -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-display font-bold text-lg text-text dark:text-dark-text">Rendimiento por Curso</h2>
-        <button @click="router.push('/docente/reportes')" class="text-sm text-primary font-medium hover:underline">
+        <h2 class="font-headline-lg font-bold text-lg text-on-surface dark:text-on-surface">Rendimiento por Curso</h2>
+        <button type="button" @click="router.push('/docente/reportes')" class="text-sm text-primary font-medium hover:underline">
           Reportes completos
         </button>
       </div>
@@ -263,11 +263,11 @@ onMounted(async () => {
 
           <div class="pt-2">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="font-bold text-text dark:text-dark-text text-sm">{{ curso.nombre }}</h3>
+              <h3 class="font-bold text-on-surface dark:text-on-surface text-sm">{{ curso.nombre }}</h3>
               <component
                 :is="curso.tendencia === 'up' ? TrendingUp : TrendingDown"
                 :size="16"
-                :class="curso.tendencia === 'up' ? 'text-mint' : 'text-danger'"
+                :class="curso.tendencia === 'up' ? 'text-on-secondary-container' : 'text-danger'"
               />
             </div>
 
@@ -275,12 +275,12 @@ onMounted(async () => {
             <div class="space-y-3">
               <div>
                 <div class="flex justify-between text-xs mb-1">
-                  <span class="text-text-muted">Promedio</span>
-                  <span class="font-bold" :class="curso.promedio >= 6 ? 'text-mint' : curso.promedio >= 5 ? 'text-amber' : 'text-danger'">
+                  <span class="text-on-surface-muted">Promedio</span>
+                  <span class="font-bold" :class="curso.promedio >= 6 ? 'text-on-secondary-container' : curso.promedio >= 5 ? 'text-amber-800 dark:text-amber-300' : 'text-danger'">
                     {{ curso.promedio.toFixed(1) }}
                   </span>
                 </div>
-                <div class="w-full h-2 bg-surface dark:bg-dark-card2 rounded-full overflow-hidden">
+                <div class="w-full h-2 bg-surface dark:bg-surface-container rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-1000 ease-out"
                     :class="curso.promedio >= 6 ? 'bg-mint' : curso.promedio >= 5 ? 'bg-amber' : 'bg-danger'"
@@ -291,12 +291,12 @@ onMounted(async () => {
 
               <div>
                 <div class="flex justify-between text-xs mb-1">
-                  <span class="text-text-muted">Tasa Entrega</span>
-                  <span class="font-bold" :class="curso.entregas >= 80 ? 'text-mint' : curso.entregas >= 50 ? 'text-amber' : 'text-danger'">
+                  <span class="text-on-surface-muted">Tasa Entrega</span>
+                  <span class="font-bold" :class="curso.entregas >= 80 ? 'text-on-secondary-container' : curso.entregas >= 50 ? 'text-amber-800 dark:text-amber-300' : 'text-danger'">
                     {{ curso.entregas }}%
                   </span>
                 </div>
-                <div class="w-full h-2 bg-surface dark:bg-dark-card2 rounded-full overflow-hidden">
+                <div class="w-full h-2 bg-surface dark:bg-surface-container rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-1000 ease-out"
                     :class="curso.entregas >= 80 ? 'bg-primary' : curso.entregas >= 50 ? 'bg-amber' : 'bg-danger'"
@@ -306,14 +306,14 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div class="flex items-center justify-between mt-4 pt-3 border-t border-border dark:border-white/10">
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-subtle dark:border-white/10">
               <BaseBadge
                 :variant="curso.riesgo === 0 ? 'mint' : curso.riesgo <= 3 ? 'amber' : 'danger'"
                 size="sm"
               >
                 {{ curso.riesgo }} en riesgo
               </BaseBadge>
-              <button class="text-xs text-primary font-semibold hover:underline">Detalle</button>
+              <button type="button" class="text-xs text-primary font-semibold hover:underline">Detalle</button>
             </div>
           </div>
         </BaseCard>
@@ -323,19 +323,20 @@ onMounted(async () => {
     <!-- Alumnos en Riesgo -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-display font-bold text-lg text-text dark:text-dark-text flex items-center gap-2">
+        <h2 class="font-headline-lg font-bold text-lg text-on-surface dark:text-on-surface flex items-center gap-2">
           <AlertTriangle :size="20" class="text-danger" /> Alumnos que Necesitan Atención
         </h2>
-        <button @click="router.push('/docente/alumnos')" class="text-sm text-primary font-medium hover:underline">
+        <button type="button" @click="router.push('/docente/alumnos')" class="text-sm text-primary font-medium hover:underline">
           Ver todos
         </button>
       </div>
 
       <BaseCard class="p-0 overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-surface dark:bg-dark-card2 text-xs uppercase tracking-wider text-text-muted border-b border-border dark:border-white/10">
+              <tr class="bg-surface dark:bg-surface-container text-xs uppercase tracking-wider text-on-surface-muted border-b border-border-subtle dark:border-white/10">
                 <th class="px-4 py-3 font-semibold">Alumno</th>
                 <th class="px-4 py-3 font-semibold">Curso</th>
                 <th class="px-4 py-3 font-semibold text-center">Entregas</th>
@@ -354,12 +355,12 @@ onMounted(async () => {
                     <div class="w-8 h-8 rounded-full bg-danger-bg dark:bg-danger/20 text-danger flex items-center justify-center font-bold text-xs flex-shrink-0">
                       {{ alumno.nombre.charAt(0) }}
                     </div>
-                    <span class="font-medium text-text dark:text-dark-text">{{ alumno.nombre }}</span>
+                    <span class="font-medium text-on-surface dark:text-on-surface">{{ alumno.nombre }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-3 text-text-muted">{{ alumno.curso }}</td>
+                <td class="px-4 py-3 text-on-surface-muted">{{ alumno.curso }}</td>
                 <td class="px-4 py-3 text-center">
-                  <span class="font-bold" :class="alumno.entregas / alumno.total < 0.5 ? 'text-danger' : 'text-amber'">
+                  <span class="font-bold" :class="alumno.entregas / alumno.total < 0.5 ? 'text-danger' : 'text-amber-800 dark:text-amber-300'">
                     {{ alumno.entregas }}/{{ alumno.total }}
                   </span>
                 </td>
@@ -377,6 +378,7 @@ onMounted(async () => {
               </tr>
             </tbody>
           </table>
+</div>
         </div>
       </BaseCard>
     </div>
@@ -385,12 +387,12 @@ onMounted(async () => {
     <BaseCard class="bg-gradient-to-r from-violet-bg to-primary-bg dark:from-violet/10 dark:to-primary/10 border-0">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-dark-card flex items-center justify-center text-3xl shadow-sm">
+          <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-surface-container-low flex items-center justify-center text-3xl shadow-sm">
             ⚡
           </div>
           <div>
-            <p class="font-display font-bold text-text dark:text-dark-text text-lg">{{ kpis.xpOtorgadoSemana.toLocaleString('es-CL') }} XP</p>
-            <p class="text-sm text-text-muted">Otorgados esta semana a tus alumnos · El compromiso sube 📈</p>
+            <p class="font-headline-lg font-bold text-on-surface dark:text-on-surface text-lg">{{ kpis.xpOtorgadoSemana.toLocaleString('es-CL') }} XP</p>
+            <p class="text-sm text-on-surface-muted">Otorgados esta semana a tus alumnos · El compromiso sube 📈</p>
           </div>
         </div>
         <BaseButton variant="primary" @click="router.push('/docente/entregas')">
