@@ -94,7 +94,7 @@ async function handleSubmit() {
             <div class="relative">
               <span
                 class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-[22px]">alternate_email</span>
-              <input id="email" v-model="email" type="email" placeholder="usuario@institucion.edu" required
+              <input id="email" v-model="email" type="email" placeholder="nombre.apellido@escuela.cl" required
                 class="input-field w-full pl-12 pr-4 py-4 bg-white/60 dark:bg-surface-container-lowest/60 border border-outline-variant/30 rounded-xl font-body-md text-on-surface placeholder:text-on-surface-variant/30 focus:bg-white dark:focus:bg-surface-container-lowest outline-none" />
             </div>
           </div>
